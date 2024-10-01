@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom"; // Import for navigation
 import { ShopContext } from "../Context/ShopContext";
 import remove_icon from "./assets/cart_cross_icon.png"; // Adjust path if needed
 import { loadStripe } from "@stripe/stripe-js";
+import { toast, ToastContainer } from "react-toastify"; // Import Toastify
+import "react-toastify/dist/ReactToastify.css"; // Import Toastify CSS
 
 const stripePromise = loadStripe(
   "pk_test_51Pt6lOP90NDEkZl4f9JCSK8RyEQq2BPnEH7D2bJ13X21cZSbK0MD0Qkx5Im57dw7uWMm24RJ0vLOzu38TENLCj8k00RSeuqRv4"
@@ -19,6 +21,7 @@ export default function CartItems() {
 
   const [mongoProducts, setMongoProducts] = useState([]);
   const [address, setAddress] = useState(""); // State to store address
+  const navigate = useNavigate(); // Initialize navigate
 
   useEffect(() => {
     const fetchMongoProducts = async () => {
@@ -83,9 +86,10 @@ export default function CartItems() {
     const authToken = localStorage.getItem("authToken");
 
     if (!authToken) {
-      if (window.confirm("Please login before proceeding.")) {
-        window.location.href = "/login";
-      }
+      toast.error("Please login before proceeding", { autoClose: 2000 });
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
       return;
     }
 
@@ -142,6 +146,7 @@ export default function CartItems() {
 
   return (
     <div className="my-[100px] mx-[170px]">
+      <ToastContainer /> {/* Add ToastContainer for notifications */}
       <div className="grid grid-cols-[0.5fr_2fr_1fr_1fr_1fr_1fr] items-center gap-[75px] py-[20px] px-[0px] text-neutral-700 text-[18px] font-semibold">
         <p>Products</p>
         <p>Title</p>
