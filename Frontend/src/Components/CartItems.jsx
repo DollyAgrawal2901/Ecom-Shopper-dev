@@ -93,6 +93,12 @@ export default function CartItems() {
       return;
     }
 
+   // Check if address is null, empty, or contains only whitespace
+  if (!address || address.trim() === "" || address === "Address not available") {
+    toast.error("Please add your delivery address", { autoClose: 2000 });
+    return; // Stop further execution
+  }
+
     const stripe = await stripePromise;
     const body = {
       items: Object.keys(cartItems)
