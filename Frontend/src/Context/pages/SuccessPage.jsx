@@ -6,21 +6,54 @@ const SuccessPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if the counter has reached 0
-    if (counter === 0) {
-      // Navigate to the home page when the counter reaches 0
-      navigate('/');
-    }
-  
-    // Set up an interval that decreases the counter every second (1000 milliseconds)
-    const timer = setInterval(() => {
-      setCounter((prevCounter) => prevCounter - 1);
+    // Function to reset the cart
+    const resetCart = async () => {
+      try {
+        const response = await fetch("http://localhost:4000/cart/reset", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+          body: JSON.stringify({}),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          console.log(data.message);
+        } else {
+          console.error(data.message);
+        }
+      } catch (error) {
+        console.error("Error resetting cart:", error);
+      }
+    };
+
+    // Call the resetCart function when the component mounts
+    resetCart();
+
+    // Timer to count down and navigate
+    const timer = setTimeout(() => {
+      navigate("/"); // Navigate to home after 10 seconds
+    }, 10000); // Navigate after 10 seconds
+
+    // Countdown logic
+    const countdown = setInterval(() => {
+      setCounter((prevCounter) => {
+        if (prevCounter === 1) {
+          clearInterval(countdown); // Clear the interval to stop further execution
+          return 0; // Set counter to 0
+        }
+        return prevCounter - 1;
+      });
     }, 1000);
-    // console.log(timer)
-  
-    // Clean up the interval when the component unmounts or the counter changes
-    return () => clearInterval(timer);
-  }, [counter, navigate]); // Dependency array: effect depends on `counter` and `navigate`
+
+    // Cleanup
+    return () => {
+      clearTimeout(timer);
+      clearInterval(countdown);
+    };
+  }, [navigate]);
   
 
   return (

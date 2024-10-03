@@ -563,7 +563,37 @@ app.post("/user/check-email", async (req, res) => {
   }
 });
 
+// Resetting cart after successful payment
+app.post("/cart/reset", fetchUser, async (req, res) => {
+  const email = req.user.email; // Get email directly from the decoded token
 
+  try {
+    // Find the user's cart by email
+    const userCart = await User.findOne({ email });
+
+    if (!userCart) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Cart not found" });
+    }
+
+    // Reset only items that have been added to the cart (quantity > 0)
+    userCart.cart.forEach((quantity, productId) => {
+      if (quantity > 0) {
+        userCart.cart.set(productId, 0); // Reset quantity to zero for added items
+      }
+    });
+
+    // Save the updated cart back to the database
+    await userCart.save();
+
+    console.log("Cart reset successfully for user:", email); // Log for verification
+    res.json({ success: true, message: "Cart reset successfully" });
+  } catch (error) {
+    console.error("Error resetting cart:", error);
+    res.status(500).json({ success: false, message: "Failed to reset cart" });
+  }
+});
 
 app.listen(port, (error) => {
   if (!error) {
