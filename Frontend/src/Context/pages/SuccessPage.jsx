@@ -6,6 +6,53 @@ const SuccessPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Function to fetch cart items from MongoDB
+    const fetchCart = async () => {
+      try {
+        const response = await fetch("http://localhost:4000/cart", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          // Now place the order with fetched cart items
+          placeOrder(data.cart);
+        } else {
+          console.error(data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching cart:", error);
+      }
+    };
+
+    // Function to place order
+    const placeOrder = async (cart) => {
+      try {
+        const response = await fetch("http://localhost:4000/user/place-order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+          body: JSON.stringify({ products: cart }), // Send cart items to backend
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          // Now reset the cart after successful order placement
+          resetCart();
+        } else {
+          console.error(data.message);
+        }
+      } catch (error) {
+        console.error("Error placing order:", error);
+      }
+    };
+
     // Function to reset the cart
     const resetCart = async () => {
       try {
@@ -29,20 +76,21 @@ const SuccessPage = () => {
       }
     };
 
-    // Call the resetCart function when the component mounts
-    resetCart();
+    // First, fetch the cart and place the order
+    fetchCart();
 
     // Timer to count down and navigate
     const timer = setTimeout(() => {
       navigate("/"); // Navigate to home after 10 seconds
-    }, 10000); // Navigate after 10 seconds
+      window.location.reload(); // Force reload to show updated cart
+    }, 10000);
 
     // Countdown logic
     const countdown = setInterval(() => {
       setCounter((prevCounter) => {
         if (prevCounter === 1) {
           clearInterval(countdown); // Clear the interval to stop further execution
-          return 0; // Set counter to 0
+          return 0;
         }
         return prevCounter - 1;
       });
@@ -54,6 +102,7 @@ const SuccessPage = () => {
       clearInterval(countdown);
     };
   }, [navigate]);
+
   
 
   return (

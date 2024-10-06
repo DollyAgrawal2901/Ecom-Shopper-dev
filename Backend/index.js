@@ -268,6 +268,11 @@ const userSchema = new mongoose.Schema({
     of: Number, // Key-value pairs of product ID and quantity
     default: new Map(),
   },
+  ordered: {
+    type: Map,
+    of: Number, // Key-value pairs of product number and quantity
+    default: new Map(), // Initially empty
+  },
   address: { type: String, default: null }, // New field for address
   createdAt: { type: Date, default: Date.now },
 });
@@ -292,9 +297,9 @@ const fetchUser = (req, res, next) => {
 // Signup route
 app.post("/signup", async (req, res) => {
   let cart = new Map();
-  for (let i = 1; i <= 300; i++) {
-    cart.set(i.toString(), 0);
-  }
+  // for (let i = 1; i <= 300; i++) {
+  //   cart.set(i.toString(), 0);
+  // }
 
   try {
     const existingUser = await User.findOne({ email: req.body.email });
@@ -562,7 +567,6 @@ app.post("/user/check-email", async (req, res) => {
     res.status(500).json({ message: "Error checking email", error });
   }
 });
-
 // Resetting cart after successful payment
 app.post("/cart/reset", fetchUser, async (req, res) => {
   const email = req.user.email; // Get email directly from the decoded token
@@ -592,6 +596,62 @@ app.post("/cart/reset", fetchUser, async (req, res) => {
   } catch (error) {
     console.error("Error resetting cart:", error);
     res.status(500).json({ success: false, message: "Failed to reset cart" });
+  }
+});
+
+// Route to update the 'ordered' field for all users
+app.post('/user/update-all-ordered', async (req, res) => {
+  try {
+    const { ordered } = req.body;
+
+    if (!ordered) {
+      return res.status(400).json({ message: "Ordered data is required" });
+    }
+
+    // Update 'ordered' field for all users
+    const result = await User.updateMany({}, { $set: { ordered } });
+
+    res.json({
+      success: true,
+      message: `Updated ${result.nModified} users' ordered field`,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error updating users" });
+  }
+});
+
+app.post("/user/place-order", fetchUser, async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.user.email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const cart = user.cart; // This is a Map from your schema
+
+    // Iterate through the cart (which is a Map) and update the ordered field
+    cart.forEach((quantity, productId) => {
+      // If the product already exists in the ordered field, add the quantities
+      if (user.ordered.has(productId)) {
+        const existingQuantity = user.ordered.get(productId);
+        user.ordered.set(productId, existingQuantity + quantity);
+      } else {
+        // Otherwise, add the new product to the ordered field
+        user.ordered.set(productId, quantity);
+      }
+    });
+
+    // Reset the cart after placing the order
+    user.cart = new Map();
+
+    // Save the updated user document
+    await user.save();
+
+    res.json({ success: true, message: "Order placed successfully" });
+  } catch (error) {
+    console.error("Error placing order:", error);
+    res.status(500).json({ message: "Error placing order" });
   }
 });
 
