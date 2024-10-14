@@ -1,19 +1,19 @@
 import Navbar from "./Components/Navbar";
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Shop from "./Context/pages/Shop";
 import ShopCategory from "./Context/pages/ShopCategory";
 import Product from "./Context/pages/Product";
 import Cart from "./Context/pages/Cart";
 import LoginSignup from "./Context/pages/LoginSignup";
 import Footer from "./Components/Footer";
-import men_banner from './Components/assets/banner_mens.png'
-import women_banner from './Components/assets/banner_women.png'
-import kid_banner from './Components/assets/banner_kids.png'
+import men_banner from './Components/assets/banner_mens.png';
+import women_banner from './Components/assets/banner_women.png';
+import kid_banner from './Components/assets/banner_kids.png';
 import SuccessPage from "./Context/pages/SuccessPage";
-import { useLocation } from "react-router-dom";
 import Profile from "./Context/pages/Profile";
+import OrderedItems from "./Context/pages/OrderedItems";
 
-function App() {
+const AppContent = () => {
   const location = useLocation();
   const isSuccessPage = location.pathname === '/success';
 
@@ -32,10 +32,18 @@ function App() {
           <Route path='/login' element={<LoginSignup />} />
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/ordereditems" element={<OrderedItems />} />
         </Routes>
-        
-        {!isSuccessPage && <Footer />}
-        </div>
+      {!isSuccessPage && <Footer />}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
 

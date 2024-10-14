@@ -268,11 +268,18 @@ const userSchema = new mongoose.Schema({
     of: Number, // Key-value pairs of product ID and quantity
     default: new Map(),
   },
-  ordered: {
-    type: Map,
-    of: Number, // Key-value pairs of product number and quantity
-    default: new Map(), // Initially empty
-  },
+  ordered: [
+    {
+      id: { type: Number, required: true }, // Product ID
+      name: { type: String, required: true }, // Product Name
+      imageUrl: { type: String, required: true }, // Product Image
+      category: { type: String, required: true }, // Product Category
+      price: { type: Number, required: true }, // Product Price
+      quantity: { type: Number, required: true }, // Quantity Ordered
+      totalPrice: { type: Number, required: true }, // Price * Quantity
+      orderedAt: { type: String, required: true }, // Date & Time in 12-hour format
+    },
+  ],
   address: { type: String, default: null }, // New field for address
   createdAt: { type: Date, default: Date.now },
 });
@@ -599,54 +606,86 @@ app.post("/cart/reset", fetchUser, async (req, res) => {
   }
 });
 
-// Route to update the 'ordered' field for all users
-app.post('/user/update-all-ordered', async (req, res) => {
-  try {
-    const { ordered } = req.body;
+// // Route to update the 'ordered' field for all users
+// app.post('/user/update-all-ordered', async (req, res) => {
+//   try {
+//     const { ordered } = req.body;
 
-    if (!ordered) {
-      return res.status(400).json({ message: "Ordered data is required" });
-    }
+//     if (!ordered) {
+//       return res.status(400).json({ message: "Ordered data is required" });
+//     }
 
-    // Update 'ordered' field for all users
-    const result = await User.updateMany({}, { $set: { ordered } });
+//     // Update 'ordered' field for all users
+//     const result = await User.updateMany({}, { $set: { ordered } });
 
-    res.json({
-      success: true,
-      message: `Updated ${result.nModified} users' ordered field`,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Error updating users" });
-  }
-});
+//     res.json({
+//       success: true,
+//       message: `Updated ${result.nModified} users' ordered field`,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: "Error updating users" });
+//   }
+// });
 
 app.post("/user/place-order", fetchUser, async (req, res) => {
   try {
     const user = await User.findOne({ email: req.user.email });
-
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const cart = user.cart; // This is a Map from your schema
+    // Convert the cart from Mongoose Map to a regular object for easier manipulation
+    const cart = user.cart; // Assuming this is a Mongoose Map
+    const products = await Product.find({}); // Fetch all products
 
-    // Iterate through the cart (which is a Map) and update the ordered field
+    const orderedItems = [];
+
+    // Log the cart to ensure it has items
+    console.log("User Cart:", cart);
+
+    // Iterate over the cart and build the ordered items array
     cart.forEach((quantity, productId) => {
-      // If the product already exists in the ordered field, add the quantities
-      if (user.ordered.has(productId)) {
-        const existingQuantity = user.ordered.get(productId);
-        user.ordered.set(productId, existingQuantity + quantity);
+      // Ensure productId is converted to a number for comparison
+      const product = products.find((prod) => prod.id === Number(productId));
+      if (product) {
+        const totalPrice = product.new_price * quantity;
+
+        // Format date and time in 12-hour format
+        const dateTime = new Date();
+        const formattedDateTime = dateTime.toLocaleString("en-US", {
+          hour12: true,
+        });
+
+        // Push order details to the array
+        orderedItems.push({
+          id: product.id,
+          name: product.name,
+          imageUrl: product.image, // Ensure this matches your product schema
+          category: product.category,
+          price: product.new_price,
+          quantity: quantity,
+          totalPrice: totalPrice,
+          orderedAt: formattedDateTime, // Optional: consider changing this to a Date object
+        });
       } else {
-        // Otherwise, add the new product to the ordered field
-        user.ordered.set(productId, quantity);
+        console.warn(`Product with id ${productId} not found in products.`);
       }
     });
 
-    // Reset the cart after placing the order
-    user.cart = new Map();
+    // Log the ordered items to ensure they are populated
+    console.log("Ordered Items:", orderedItems);
+
+    // Add ordered items to user's `ordered` field
+    user.ordered = [...user.ordered, ...orderedItems];
+
+    // Clear the cart after placing the order
+    user.cart = new Map(); // Reset cart
 
     // Save the updated user document
     await user.save();
+
+    // Log the updated user document for debugging
+    console.log("Updated User:", user);
 
     res.json({ success: true, message: "Order placed successfully" });
   } catch (error) {
@@ -654,6 +693,40 @@ app.post("/user/place-order", fetchUser, async (req, res) => {
     res.status(500).json({ message: "Error placing order" });
   }
 });
+
+app.get("/user/ordered", fetchUser, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Assuming `user.ordered` is an array of ordered items
+    const orderedItems = user.ordered;
+
+    // Fetch all products to match product details
+    const products = await Product.find({});
+
+    const orderedWithDetails = orderedItems.map((item) => {
+      const product = products.find((prod) => prod.id === item.id);
+      return {
+        productId: item.id, // Assuming product IDs are stored in `item.id`
+        name: product?.name || "Product not found",
+        imageUrl: product?.imageUrl || "No Image",
+        category: product?.category || "Unknown",
+        price: product?.price || 0,
+        quantity: item.quantity,
+        totalPrice: item.quantity * (product?.price || 0),
+        orderedAt: item.orderedAt, // Assuming `orderedAt` is already stored
+      };
+    });
+
+    res.json({ ordered: orderedWithDetails });
+  } catch (error) {
+    console.error("Error fetching ordered items:", error);
+    res.status(500).json({ message: "Failed to fetch ordered items" });
+  }
+});
+
+
 
 app.listen(port, (error) => {
   if (!error) {

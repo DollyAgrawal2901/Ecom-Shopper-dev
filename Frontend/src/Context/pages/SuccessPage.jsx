@@ -131,7 +131,10 @@ const SuccessPage = () => {
           Redirecting to Home in {counter}...
         </p>
         <button
-          onClick={() => navigate('/')}
+          onClick={() =>{
+            navigate('/')
+            window.location.reload(); // Force reload to show updated cart
+          }}
           className="mt-8 px-6 py-3 bg-red-700 text-white rounded-lg hover:opacity-90"
         >
           Home Page
