@@ -150,6 +150,18 @@ export default function CartItems() {
     }
   };
 
+  const handleIncrement = (id) => {
+    const product = getProductById(id);
+    if (product) {
+      if (cartItems[id] < product.quantity) { // Check against backend quantity
+        updateCartItemQuantity(id, cartItems[id] + 1);
+      } 
+      // else {
+      //   toast.error("Cannot exceed available quantity", { autoClose: 2000 });
+      // }
+    }
+  };
+
   return (
     <div className="my-[100px] mx-[170px]">
       <ToastContainer /> {/* Add ToastContainer for notifications */}
@@ -173,7 +185,7 @@ export default function CartItems() {
                 <button
                   className="w-[64px] h-[50px] border border-[#ebebeb] bg-white"
                   onClick={() =>
-                    updateCartItemQuantity(e.id, cartItems[e.id] + 1)
+                    handleIncrement(e.id)
                   }
                 >
                   {cartItems[e.id]}
