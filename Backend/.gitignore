@@ -11,7 +11,7 @@ lerna-debug.log*
 # .env
 
 # Upload Folder
-/upload/images/
+# /upload/images/
 
 node_modules
 dist
