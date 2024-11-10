@@ -143,24 +143,14 @@ export default function CartItems() {
       });
 
       if (error) {
-        console.error("Error redirecting to Stripe Checkout:", error);
+        console.error("Error redirecting to Stripe Checkout:", error); 
       }
     } catch (error) {
       console.error("Error creating payment session:", error);
     }
   };
 
-  const handleIncrement = (id) => {
-    const product = getProductById(id);
-    if (product) {
-      if (cartItems[id] < product.quantity) { // Check against backend quantity
-        updateCartItemQuantity(id, cartItems[id] + 1);
-      } 
-      // else {
-      //   toast.error("Cannot exceed available quantity", { autoClose: 2000 });
-      // }
-    }
-  };
+ 
 
   return (
     <div className="my-[100px] mx-[170px]">
@@ -185,7 +175,7 @@ export default function CartItems() {
                 <button
                   className="w-[64px] h-[50px] border border-[#ebebeb] bg-white"
                   onClick={() =>
-                    handleIncrement(e.id)
+                    updateCartItemQuantity(e.id, cartItems[e.id] + 1)
                   }
                 >
                   {cartItems[e.id]}

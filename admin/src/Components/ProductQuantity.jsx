@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 
 const ProductQuantity = () => {
   const [products, setProducts] = useState([]);
+  const [bulkQuantity, setBulkQuantity] = useState("");
 
   // Fetch products from backend
   useEffect(() => {
@@ -43,12 +44,58 @@ const ProductQuantity = () => {
     }
   };
 
+    // Update all product quantities to a specific number
+    const setAllQuantities = async () => {
+      const quantity = parseInt(bulkQuantity);
+      if (isNaN(quantity) || quantity < 0) return; // Validate input
+  
+      try {
+        // Update each product's quantity in the backend and locally
+        await Promise.all(
+          products.map((product) =>
+            fetch(`http://localhost:4000/allproduct/${product.id}`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ quantity }),
+            })
+          )
+        );
+  
+        // Update state locally after successful update
+        setProducts((prev) =>
+          prev.map((product) => ({ ...product, quantity }))
+        );
+      } catch (error) {
+        console.error("Error setting all quantities:", error);
+      }
+    };
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <h1 className="flex justify-center text-4xl font-bold mb-6 text-red-600">Product Quantities</h1> {/* Red heading */}
-      <p className="flex justify-center text-lg font-semibold mb-4 text-red-600">
+    <div className="flex">
+      <p className="flex justify-center text-lg font-semibold mb-4 text-red-600 ml-[520px]">
         Total items available: {products.length}
       </p>
+      <div className="flex items-center space-x-2 ml-[250px]">
+          <input
+            type="number"
+            placeholder="Set all quantities"
+            value={bulkQuantity}
+            onChange={(e) => setBulkQuantity(e.target.value)}
+            className="border border-gray-300 rounded px-2 py-1"
+          />
+          <button
+            onClick={setAllQuantities}
+            className="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600"
+          >
+            Set
+          </button>
+        </div>
+        </div>
+       
       <div className="grid grid-cols-4 gap-4 py-2 bg-red-100 text-red-700 font-semibold">
         <p>Product ID</p>
         <p className="">Product Image</p>
